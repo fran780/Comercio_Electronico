@@ -2,13 +2,13 @@
 
 namespace Controllers\Products;
 
-use Controllers\PublicController;
+use Controllers\PrivateController;
 use Views\Renderer;
 use Dao\Products\Products as ProductsDao;
 use Utilities\Site;
 use Utilities\Validators;
 
-class Product extends PublicController
+class Product extends PrivateController
 {
     private $viewData = [];
     private $mode = "DSP";
@@ -53,6 +53,9 @@ class Product extends PublicController
     {
         $this->mode = $_GET["mode"] ?? "NOF";
         if (isset($this->modeDescriptions[$this->mode])) {
+            if (!$this->isFeatureAutorized("product_" . $this->mode)) {
+                throw new \Exception("No tiene permisos para realizar esta acción.", 1);
+            }
             $this->readonly = $this->mode === "DEL" ? "readonly" : "";
             $this->showCommitBtn = $this->mode !== "DSP";
             if ($this->mode !== "INS") {
@@ -69,48 +72,48 @@ class Product extends PublicController
     private function validateData()
     {
 
-    if ($this->mode === "DEL") {
+        if ($this->mode === "DEL") {
+            $this->product["productId"] = intval($_POST["productId"] ?? "");
+            return true;
+        }
+
+        $errors = [];
+        $this->product_xss_token = $_POST["product_xss_token"] ?? "";
         $this->product["productId"] = intval($_POST["productId"] ?? "");
+        $this->product["productName"] = strval($_POST["productName"] ?? "");
+        $this->product["productDescription"] = strval($_POST["productDescription"] ?? "");
+        $this->product["productPrice"] = floatval($_POST["productPrice"] ?? "");
+        $this->product["productImgUrl"] = strval($_POST["productImgUrl"] ?? "");
+        $this->product["productStatus"] = strval($_POST["productStatus"] ?? "");
+
+        if (Validators::IsEmpty($this->product["productName"])) {
+            $errors["productName_error"] = "El nombre del producto es requerido";
+        }
+
+        if (Validators::IsEmpty($this->product["productDescription"])) {
+            $errors["productDescription_error"] = "La descripción del producto es requerida";
+        }
+
+        if (Validators::IsEmpty($this->product["productPrice"]) && $this->product["productPrice"] <= 0) {
+            $errors["productPrice_error"] = "El precio del producto es requerido y debe ser un valor mayor a cero";
+        }
+
+        if (Validators::IsEmpty($this->product["productImgUrl"])) {
+            $errors["productImgUrl_error"] = "La imagen del producto es requerida";
+        }
+
+        if (!in_array($this->product["productStatus"], ["ACT", "INA"])) {
+            $errors["productStatus_error"] = "El estado del producto es invalido";
+        }
+
+        if (count($errors) > 0) {
+            foreach ($errors as $key => $value) {
+                $this->product[$key] = $value;
+            }
+            return false;
+        }
         return true;
     }
-
-    $errors = [];
-    $this->product_xss_token = $_POST["product_xss_token"] ?? "";
-    $this->product["productId"] = intval($_POST["productId"] ?? "");
-    $this->product["productName"] = strval($_POST["productName"] ?? "");
-    $this->product["productDescription"] = strval($_POST["productDescription"] ?? "");
-    $this->product["productPrice"] = floatval($_POST["productPrice"] ?? "");
-    $this->product["productImgUrl"] = strval($_POST["productImgUrl"] ?? "");
-    $this->product["productStatus"] = strval($_POST["productStatus"] ?? "");
-
-    if (Validators::IsEmpty($this->product["productName"])) {
-        $errors["productName_error"] = "El nombre del producto es requerido";
-    }
-
-    if (Validators::IsEmpty($this->product["productDescription"])) {
-        $errors["productDescription_error"] = "La descripción del producto es requerida";
-    }
-
-    if (Validators::IsEmpty($this->product["productPrice"]) && $this->product["productPrice"] <= 0) {
-        $errors["productPrice_error"] = "El precio del producto es requerido y debe ser un valor mayor a cero";
-    }
-
-    if (Validators::IsEmpty($this->product["productImgUrl"])) {
-        $errors["productImgUrl_error"] = "La imagen del producto es requerida";
-    }
-
-    if (!in_array($this->product["productStatus"], ["ACT", "INA"])) {
-        $errors["productStatus_error"] = "El estado del producto es invalido";
-    }
-
-    if (count($errors) > 0) {
-        foreach ($errors as $key => $value) {
-            $this->product[$key] = $value;
-        }
-        return false;
-    }
-    return true;
-}
 
     private function handlePostAction()
     {

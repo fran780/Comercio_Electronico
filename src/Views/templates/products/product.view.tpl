@@ -8,7 +8,7 @@
         <div class="row my-2 align-center">
             <label class="col-12 col-m-3" for="productIdD">Código</label>
             <input class="col-12 col-m-9" readonly disabled type="text" name="productIdD" id="productIdD"
-                placehoder="Código" value="{{productId}}" />
+                placeholder="Código" value="{{productId}}" />
             <input type="hidden" name="mode" value="{{~mode}}" />
             <input type="hidden" name="productId" value="{{productId}}" />
             <input type="hidden" name="token" value="{{~product_xss_token}}" />

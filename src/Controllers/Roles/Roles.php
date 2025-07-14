@@ -1,64 +1,57 @@
 <?php
 
-namespace Controllers\Products;
+namespace Controllers\Roles;
 
-use Controllers\PrivateController;
 use Controllers\PublicController;
 use Utilities\Context;
 use Utilities\Paging;
-use Dao\Products\Products as DaoProducts;
+use Dao\Roles\Roles as DaoRoles;
 use Views\Renderer;
 
-class Products extends PrivateController
+class Roles extends PublicController
 {
-    private $partialName = "";
+    private $partialDescription = "";
     private $status = "";
     private $orderBy = "";
     private $orderDescending = false;
     private $pageNumber = 1;
     private $itemsPerPage = 10;
     private $viewData = [];
-    private $products = [];
-    private $productsCount = 0;
+    private $roles = [];
+    private $rolesCount = 0;
     private $pages = 0;
-
-    private $product_DSP = false;
-    private $product_UPD = false;
-    private $product_DEL = false;
-    private $product_INS = false;
-
 
     public function run(): void
     {
         $this->getParamsFromContext();
         $this->getParams();
-        $tmpProducts = DaoProducts::getProducts(
-            $this->partialName,
+        $tmpRoles = DaoRoles::getRoles(
+            $this->partialDescription,
             $this->status,
             $this->orderBy,
             $this->orderDescending,
             $this->pageNumber - 1,
             $this->itemsPerPage
         );
-        $this->products = $tmpProducts["products"];
-        $this->productsCount = $tmpProducts["total"];
-        $this->pages = $this->productsCount > 0 ? ceil($this->productsCount / $this->itemsPerPage) : 1;
+        $this->roles = $tmpRoles["roles"];
+        $this->rolesCount = $tmpRoles["total"];
+        $this->pages = $this->rolesCount > 0 ? ceil($this->rolesCount / $this->itemsPerPage) : 1;
         if ($this->pageNumber > $this->pages) {
             $this->pageNumber = $this->pages;
         }
         $this->setParamsToContext();
         $this->setParamsToDataView();
-        Renderer::render("products/products", $this->viewData);
+        Renderer::render("roles/roles", $this->viewData);
     }
 
     private function getParams(): void
     {
-        $this->partialName = isset($_GET["partialName"]) ? $_GET["partialName"] : $this->partialName;
+        $this->partialDescription = $_GET["partialDescription"] ?? $this->partialDescription;
         $this->status = isset($_GET["status"]) && in_array($_GET["status"], ['ACT', 'INA', 'EMP']) ? $_GET["status"] : $this->status;
         if ($this->status === "EMP") {
             $this->status = "";
         }
-        $this->orderBy = isset($_GET["orderBy"]) && in_array($_GET["orderBy"], ["productId", "productName", "productPrice", "clear"]) ? $_GET["orderBy"] : $this->orderBy;
+        $this->orderBy = isset($_GET["orderBy"]) && in_array($_GET["orderBy"], ["rolescod", "rolesdsc", "clear"]) ? $_GET["orderBy"] : $this->orderBy;
         if ($this->orderBy === "clear") {
             $this->orderBy = "";
         }
@@ -66,47 +59,40 @@ class Products extends PrivateController
         $this->pageNumber = isset($_GET["pageNum"]) ? intval($_GET["pageNum"]) : $this->pageNumber;
         $this->itemsPerPage = isset($_GET["itemsPerPage"]) ? intval($_GET["itemsPerPage"]) : $this->itemsPerPage;
     }
+
     private function getParamsFromContext(): void
     {
-        $this->partialName = Context::getContextByKey("products_partialName");
-        $this->status = Context::getContextByKey("products_status");
-        $this->orderBy = Context::getContextByKey("products_orderBy");
-        $this->orderDescending = boolval(Context::getContextByKey("products_orderDescending"));
-        $this->pageNumber = intval(Context::getContextByKey("products_page"));
-        $this->itemsPerPage = intval(Context::getContextByKey("products_itemsPerPage"));
+        $this->partialDescription = Context::getContextByKey("roles_partialDescription");
+        $this->status = Context::getContextByKey("roles_status");
+        $this->orderBy = Context::getContextByKey("roles_orderBy");
+        $this->orderDescending = boolval(Context::getContextByKey("roles_orderDescending"));
+        $this->pageNumber = intval(Context::getContextByKey("roles_page"));
+        $this->itemsPerPage = intval(Context::getContextByKey("roles_itemsPerPage"));
         if ($this->pageNumber < 1) $this->pageNumber = 1;
         if ($this->itemsPerPage < 1) $this->itemsPerPage = 10;
-
-        $this->product_DSP = $this->isFeatureAutorized("product_DSP");
-        $this->product_UPD = $this->isFeatureAutorized("product_UPD");
-        $this->product_DEL = $this->isFeatureAutorized("product_DEL");
-        $this->product_INS = $this->isFeatureAutorized("product_INS");
     }
+
     private function setParamsToContext(): void
     {
-        Context::setContext("products_partialName", $this->partialName, true);
-        Context::setContext("products_status", $this->status, true);
-        Context::setContext("products_orderBy", $this->orderBy, true);
-        Context::setContext("products_orderDescending", $this->orderDescending, true);
-        Context::setContext("products_page", $this->pageNumber, true);
-        Context::setContext("products_itemsPerPage", $this->itemsPerPage, true);
+        Context::setContext("roles_partialDescription", $this->partialDescription, true);
+        Context::setContext("roles_status", $this->status, true);
+        Context::setContext("roles_orderBy", $this->orderBy, true);
+        Context::setContext("roles_orderDescending", $this->orderDescending, true);
+        Context::setContext("roles_page", $this->pageNumber, true);
+        Context::setContext("roles_itemsPerPage", $this->itemsPerPage, true);
     }
+
     private function setParamsToDataView(): void
     {
-        $this->viewData["partialName"] = $this->partialName;
+        $this->viewData["partialDescription"] = $this->partialDescription;
         $this->viewData["status"] = $this->status;
         $this->viewData["orderBy"] = $this->orderBy;
         $this->viewData["orderDescending"] = $this->orderDescending;
         $this->viewData["pageNum"] = $this->pageNumber;
         $this->viewData["itemsPerPage"] = $this->itemsPerPage;
-        $this->viewData["productsCount"] = $this->productsCount;
+        $this->viewData["rolesCount"] = $this->rolesCount;
         $this->viewData["pages"] = $this->pages;
-        $this->viewData["products"] = $this->products;
-
-        $this->viewData["product_DSP"] = $this->product_DSP;
-        $this->viewData["product_UPD"] = $this->product_UPD;
-        $this->viewData["product_DEL"] = $this->product_DEL;
-        $this->viewData["product_INS"] = $this->product_INS;
+        $this->viewData["roles"] = $this->roles;
 
         if ($this->orderBy !== "") {
             $orderByKey = "Order" . ucfirst($this->orderBy);
@@ -117,15 +103,18 @@ class Products extends PrivateController
             }
             $this->viewData[$orderByKey] = true;
         }
+
         $statusKey = "status_" . ($this->status === "" ? "EMP" : $this->status);
         $this->viewData[$statusKey] = "selected";
+
         $pagination = Paging::getPagination(
-            $this->productsCount,
+            $this->rolesCount,
             $this->itemsPerPage,
             $this->pageNumber,
-            "index.php?page=Products_Products",
-            "Products_Products"
+            "index.php?page=Roles_Roles",
+            "Roles_Roles"
         );
         $this->viewData["pagination"] = $pagination;
     }
 }
+?>
